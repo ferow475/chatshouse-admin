@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatshouse Admin Panel</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117; --s1: #1a1d2e; --s2: #252840;
+  --border: #2e3155; --accent: #6c63ff; --green: #22c55e;
+  --yellow: #f59e0b; --red: #ef4444; --text: #e2e8f0; --muted: #8892a4;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; overflow: hidden; height: 100vh; }
+.app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
+.sidebar { background: var(--s1); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.logo { padding: 16px; font-size: 17px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); }
+.logo span { color: var(--text); }
+.ws-status { padding: 7px 16px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+.ws-dot.on { background: var(--green); box-shadow: 0 0 5px var(--green); }
+nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+.nav { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; color: var(--muted); border-left: 3px solid transparent; font-size: 13px; font-weight: 500; transition: all 0.12s; }
+.nav:hover { background: var(--s2); color: var(--text); }
+.nav.active { color: var(--accent); border-left-color: var(--accent); background: rgba(108,99,255,0.08); }
+.nbadge { background: var(--red); color: #fff; border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 700; margin-left: auto; }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); }
+.btn-refresh { width: 100%; padding: 8px; background: var(--accent); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 12px; font-weight: 600; }
+.upd { text-align: center; color: var(--muted); font-size: 10px; margin-top: 5px; }
+.main { display: flex; flex-direction: column; overflow: hidden; }
+.page-header { padding: 14px 20px 0; flex-shrink: 0; }
+.page-title { font-size: 20px; font-weight: 700; }
+.page-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.content { padding: 12px 20px; overflow-y: auto; flex: 1; }
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+.stat { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.slabel { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.sval { font-size: 24px; font-weight: 700; line-height: 1; }
+.c-accent { color: var(--accent); } .c-green { color: var(--green); } .c-red { color: var(--red); } .c-yellow { color: var(--yellow); }
+.card { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+.card-hdr { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; }
+.card-act { font-size: 11px; color: var(--accent); cursor: pointer; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 8px 12px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+td { padding: 8px 12px; border-bottom: 1px solid rgba(46,49,85,0.4); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.sbar-w { display: flex; align-items: center; gap: 7px; }
+.sbar { height: 5px; border-radius: 3px; background: var(--s2); min-width: 55px; overflow: hidden; }
+.sf { height: 100%; border-radius: 3px; }
+.slbl { font-weight: 700; font-size: 12px; }
+.sa { color: var(--green); } .sb { color: #84cc16; } .sc { color: var(--yellow); } .sd { color: #f97316; } .se { color: var(--red); }
+.av { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.row { display: flex; align-items: center; gap: 7px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dg { background: var(--green); box-shadow: 0 0 5px var(--green); } .dr { background: var(--red); }
+.pill { padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+.pg { background: rgba(34,197,94,0.15); color: var(--green); }
+.py { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.pr { background: rgba(239,68,68,0.15); color: var(--red); }
+.pb { background: rgba(108,99,255,0.15); color: var(--accent); }
+/* Profile badge */
+.pbadge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: rgba(108,99,255,0.15); color: var(--accent); margin-right: 4px; }
+.section { display: none; flex-direction: column; overflow: hidden; height: 100%; }
+.section.active { display: flex; }
+.op-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.op-card { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.op-card.urgent-b { border-color: var(--red); } .op-card.warn-b { border-color: var(--yellow); }
+.alert-item { display: flex; gap: 10px; padding: 9px 14px; border-bottom: 1px solid rgba(46,49,85,0.4); align-items: flex-start; cursor: pointer; }
+.alert-item:last-child { border-bottom: none; }
+.atext { flex: 1; }
+.atitle { font-size: 12px; font-weight: 500; }
+.adesc { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.atime { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.fsel { background: var(--s1); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 7px; font-size: 12px; cursor: pointer; }
+.finp { background: var(--s1); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 7px; font-size: 12px; outline: none; min-width: 130px; }
+.finp:focus { border-color: var(--accent); }
+.loading { text-align: center; padding: 30px; color: var(--muted); }
+.spin { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 30px; color: var(--muted); font-size: 12px; }
+/* Login */
+#login-overlay { position: fixed; inset: 0; background: rgba(15,17,23,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.login-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 30px; width: 320px; }
+.login-title { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+.login-sub { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+.form-row { margin-bottom: 11px; }
+.form-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.form-input { width: 100%; background: var(--s2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; outline: none; }
+.form-input:focus { border-color: var(--accent); }
+.login-btn { width: 100%; padding: 10px; background: var(--accent); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 6px; }
+.login-err { color: var(--red); font-size: 11px; margin-top: 6px; display: none; }
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 500; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--s1); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 620px; max-height: 80vh; overflow-y: auto; }
+.modal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.modal-close:hover { color: var(--red); }
+.msg-panel { display: grid; grid-template-columns: 1fr 280px; gap: 10px; }
+.messages { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 12px; max-height: 400px; overflow-y: auto; }
+.msg { margin-bottom: 10px; display: flex; flex-direction: column; }
+.msg.out { align-items: flex-end; } .msg.inc { align-items: flex-start; }
+.mbubble { max-width: 78%; padding: 7px 11px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.msg.out .mbubble { background: var(--accent); color: #fff; border-radius: 10px 10px 2px 10px; }
+.msg.inc .mbubble { background: var(--s2); color: var(--text); border-radius: 10px 10px 10px 2px; }
+.mmeta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.ai-panel { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.ai-score-big { font-size: 48px; font-weight: 800; text-align: center; padding: 10px 0; }
+.ai-comment { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.ai-tips li { font-size: 12px; padding: 4px 0; color: var(--text); }
+.ai-tips li::before { content: '→ '; color: var(--accent); }
+.btn-ai { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 3px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.btn-ai:hover { background: rgba(108,99,255,0.1); }
+a.link { color: var(--accent); text-decoration: none; font-size: 12px; }
+a.link:hover { text-decoration: underline; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+/* Worker profiles list in sidebar */
+.worker-profiles { font-size: 10px; color: var(--muted); padding: 4px 16px 8px 36px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-title">🔐 Admin Panel</div>
+    <div class="login-sub">Chatshouse Quality Control</div>
+    <div class="form-row"><div class="form-label">Backend URL</div><input class="form-input" id="login-url" value="http://localhost:4000" type="text"></div>
+    <div class="form-row"><div class="form-label">Admin Secret</div><input class="form-input" id="login-secret" type="password" placeholder="chatshouse_admin_2024"></div>
+    <button class="login-btn" onclick="doLogin()">Connect</button>
+    <div class="login-err" id="login-err">Connection failed. Check URL and secret.</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dialog-modal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title" id="modal-title">Dialog</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="msg-panel">
+      <div class="messages" id="modal-messages"></div>
+      <div class="ai-panel">
+        <div style="font-weight:600;margin-bottom:10px">🤖 AI Analysis</div>
+        <div id="modal-ai-content"><div class="empty">No analysis yet</div></div>
+        <button class="btn-ai" id="modal-analyze-btn" style="width:100%;margin-top:10px">Analyze with AI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">Chat<span>Admin</span></div>
+    <div class="ws-status"><div class="ws-dot" id="ws-dot"></div><span id="ws-text">Connecting...</span></div>
+    <nav>
+      <div class="nav active" data-s="dashboard">📊 <span>Dashboard</span></div>
+      <div class="nav" data-s="workers">👥 <span>Workers</span> <span class="nbadge" id="nb-workers">0</span></div>
+      <div class="nav" data-s="online">🟢 <span>Online Monitor</span> <span class="nbadge" id="nb-online">0</span></div>
+      <div class="nav" data-s="dialogs">💬 <span>Dialogs</span></div>
+      <div class="nav" data-s="mails">✉️ <span>Mails</span> <span class="nbadge" id="nb-mails">0</span></div>
+      <div class="nav" data-s="alerts">⚠️ <span>Alerts</span> <span class="nbadge" id="nb-alerts">0</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-refresh" onclick="reconnect()">🔄 Refresh</button>
+      <div class="upd" id="upd-time">Not connected</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="section active" id="s-dashboard">
+      <div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">Real-time overview — workers and all profiles</div></div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat"><div class="slabel">Workers Online</div><div class="sval c-green" id="d-workers">—</div></div>
+          <div class="stat"><div class="slabel">Total Profiles</div><div class="sval c-accent" id="d-profiles">—</div></div>
+          <div class="stat"><div class="slabel">Total Dialogs</div><div class="sval c-accent" id="d-dialogs">—</div></div>
+          <div class="stat"><div class="slabel">Men Online</div><div class="sval c-green" id="d-online">—</div></div>
+          <div class="stat"><div class="slabel">Active Alerts</div><div class="sval c-red" id="d-alerts-cnt">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">Worker Performance <span class="card-act" onclick="goTo('workers')">View all →</span></div>
+          <div id="d-workers-loading" class="loading"><div class="spin"></div></div>
+          <table id="d-workers-table" style="display:none">
+            <thead><tr><th>Worker</th><th>Profiles</th><th>Dialogs</th><th>Online</th><th>Avg Wait</th><th>AI Score</th><th>Alerts</th><th>Status</th></tr></thead>
+            <tbody id="d-workers-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-hdr">🔴 Critical Alerts <span class="card-act" onclick="goTo('alerts')">All →</span></div>
+          <div id="d-alerts-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workers -->
+    <div class="section" id="s-workers">
+      <div class="page-header"><div class="page-title">👥 Workers</div><div class="page-sub">Each worker manages 5–15 profiles</div></div>
+      <div class="content"><div class="op-grid" id="workers-grid"></div></div>
+    </div>
+
+    <!-- Online Monitor -->
+    <div class="section" id="s-online">
+      <div class="page-header"><div class="page-title">🟢 Online Monitor</div><div class="page-sub">Men online right now — prioritize responses</div></div>
+      <div class="content">
+        <div class="filters">
+          <select class="fsel" id="on-sort" onchange="renderOnline()"><option value="time">Last message first</option><option value="score">Worst AI score first</option></select>
+          <select class="fsel" id="on-worker" onchange="renderOnline()"><option value="">All workers</option></select>
+          <select class="fsel" id="on-profile" onchange="renderOnline()"><option value="">All profiles</option></select>
+        </div>
+        <div class="op-grid" id="online-grid"></div>
+      </div>
+    </div>
+
+    <!-- Dialogs -->
+    <div class="section" id="s-dialogs">
+      <div class="page-header"><div class="page-title">💬 Dialogs</div><div class="page-sub">All dialogs with AI quality scores</div></div>
+      <div class="content">
+        <div class="filters">
+          <input class="finp" id="d-search" placeholder="Search man..." oninput="renderDialogs()">
+          <select class="fsel" id="d-worker" onchange="renderDialogs();populateProfileFilter()"><option value="">All workers</option></select>
+          <select class="fsel" id="d-profile" onchange="renderDialogs()"><option value="">All profiles</option></select>
+          <select class="fsel" id="d-score-f" onchange="renderDialogs()">
+            <option value="">All scores</option><option value="good">Good 80+</option><option value="avg">Average 50-79</option><option value="bad">Poor &lt;50</option><option value="none">Not analyzed</option>
+          </select>
+          <select class="fsel" id="d-status" onchange="renderDialogs()"><option value="">All</option><option value="online">Online</option><option value="incoming">Waiting reply</option></select>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Man</th><th>Profile</th><th>Worker</th><th>Last Message</th><th>Time</th><th>AI Score</th><th></th></tr></thead>
+            <tbody id="dial-tbody"><tr><td colspan="7" class="loading"><div class="spin"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mails -->
+    <div class="section" id="s-mails">
+      <div class="page-header"><div class="page-title">✉️ Mails / Letters</div><div class="page-sub">All mail correspondence across profiles</div></div>
+      <div class="content">
+        <div class="filters">
+          <select class="fsel" id="m-worker" onchange="renderMails()"><option value="">All workers</option></select>
+          <select class="fsel" id="m-profile" onchange="renderMails()"><option value="">All profiles</option></select>
+          <select class="fsel" id="m-type" onchange="renderMails()"><option value="">All</option><option value="1">Incoming</option><option value="0">Sent</option><option value="unread">Unread</option></select>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Contact</th><th>Profile</th><th>Worker</th><th>Subject / Preview</th><th>Type</th><th>Time</th></tr></thead>
+            <tbody id="mails-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="section" id="s-alerts">
+      <div class="page-header"><div class="page-title">⚠️ Alerts</div><div class="page-sub">Automatic quality alerts across all workers</div></div>
+      <div class="content">
+        <div class="filters">
+          <select class="fsel" id="al-type" onchange="renderAlerts()"><option value="">All types</option><option value="online_waiting">Online waiting</option><option value="slow_response">Slow response</option></select>
+          <select class="fsel" id="al-worker" onchange="renderAlerts()"><option value="">All workers</option></select>
+          <select class="fsel" id="al-sev" onchange="renderAlerts()"><option value="">All</option><option value="high">High only</option><option value="medium">Medium</option></select>
+          <button class="btn-ai" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div class="card"><div id="alerts-full-list"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const SK = 'admin_secret', BK = 'admin_backend_url';
+let backendUrl = localStorage.getItem(BK) || 'http://localhost:4000';
+let adminSecret = localStorage.getItem(SK) || '';
+let ws = null;
+let state = { workers: [], profiles: [], dialogs: [], alerts: [], mails: [], mailStats: [] };
+
+// ─── Login ────────────────────────────────────────────────
+async function doLogin() {
+  const url = document.getElementById('login-url').value.trim();
+  const secret = document.getElementById('login-secret').value.trim();
+  try {
+    const r = await fetch(`${url}/api/admin/state`, { headers: { 'x-admin-secret': secret }, signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error('Auth failed');
+    backendUrl = url; adminSecret = secret;
+    localStorage.setItem(BK, url); localStorage.setItem(SK, secret);
+    document.getElementById('login-overlay').style.display = 'none';
+    connectWS(); loadState();
+  } catch(e) { document.getElementById('login-err').style.display = 'block'; }
+}
+if (adminSecret) { document.getElementById('login-url').value = backendUrl; doLogin(); }
+
+// ─── WebSocket ────────────────────────────────────────────
+function connectWS() {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  ws = new WebSocket(backendUrl.replace('http://', 'ws://').replace('https://', 'wss://'));
+  ws.onopen = () => { ws.send(JSON.stringify({ type: 'auth_admin', secret: adminSecret })); setWS(true); };
+  ws.onmessage = (e) => { try { handleWS(JSON.parse(e.data)); } catch(err) {} };
+  ws.onclose = () => { setWS(false); setTimeout(connectWS, 5000); };
+  ws.onerror = () => setWS(false);
+}
+function setWS(on) {
+  document.getElementById('ws-dot').className = 'ws-dot' + (on ? ' on' : '');
+  document.getElementById('ws-text').textContent = on ? 'Live — connected' : 'Reconnecting...';
+}
+function handleWS(msg) {
+  if (msg.type === 'initial_data') applyState(msg.data);
+  else if (msg.type === 'sync_update') {
+    // Update dialogs
+    if (msg.dialogs) {
+      msg.dialogs.forEach(d => {
+        const idx = state.dialogs.findIndex(x => x.id === d.id && x.profile_ulid === d.profile_ulid);
+        const enriched = { ...d, worker_id: msg.workerId };
+        if (idx >= 0) state.dialogs[idx] = { ...state.dialogs[idx], ...enriched };
+        else state.dialogs.push(enriched);
+      });
+    }
+    renderAll(); setUpd();
+  } else if (msg.type === 'new_alert') {
+    state.alerts.unshift(msg.alert);
+    renderAlerts(); renderDash(); updateBadges();
+    flashBadge('nb-alerts');
+  } else if (msg.type === 'ai_score_updated') {
+    const d = state.dialogs.find(x => x.id === msg.dialogId && x.profile_ulid === msg.profileUlid);
+    if (d) { d.ai_score = msg.score; d.ai_comment = msg.comment; d.ai_tips = JSON.stringify(msg.tips); }
+    renderAll(); setUpd();
+  } else if (msg.type === 'worker_offline') {
+    const w = state.workers.find(x => x.id === msg.workerId);
+    if (w) w.is_online = 0;
+    renderAll();
+  }
+}
+function flashBadge(id) {
+  const el = document.getElementById(id);
+  el.style.background = '#fff'; el.style.color = '#ef4444';
+  setTimeout(() => { el.style.background = ''; el.style.color = ''; }, 2000);
+}
+
+// ─── Load state ───────────────────────────────────────────
+async function loadState() {
+  try {
+    const r = await fetch(`${backendUrl}/api/admin/state`, { headers: { 'x-admin-secret': adminSecret } });
+    applyState(await r.json());
+    const mr = await fetch(`${backendUrl}/api/admin/mails`, { headers: { 'x-admin-secret': adminSecret } });
+    state.mails = await mr.json();
+    renderMails(); setUpd();
+  } catch(e) {}
+}
+function applyState(d) {
+  if (d.workers) state.workers = d.workers;
+  if (d.profiles) state.profiles = d.profiles;
+  if (d.dialogs) state.dialogs = d.dialogs;
+  if (d.alerts) state.alerts = d.alerts;
+  if (d.mailStats) state.mailStats = d.mailStats;
+  renderAll(); updateBadges();
+}
+function reconnect() { connectWS(); loadState(); }
+function setUpd() { document.getElementById('upd-time').textContent = 'Updated ' + new Date().toLocaleTimeString(); }
+
+// ─── Nav ──────────────────────────────────────────────────
+document.querySelectorAll('.nav').forEach(el => el.addEventListener('click', () => goTo(el.dataset.s)));
+function goTo(name) {
+  document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+  document.querySelector(`.nav[data-s="${name}"]`).classList.add('active');
+}
+
+// ─── Helpers ──────────────────────────────────────────────
+function grade(s) {
+  if (s === null || s === undefined) return { g: '?', cls: '', col: '#8892a4' };
+  if (s >= 90) return { g: 'A', cls: 'sa', col: '#22c55e' };
+  if (s >= 75) return { g: 'B', cls: 'sb', col: '#84cc16' };
+  if (s >= 55) return { g: 'C', cls: 'sc', col: '#f59e0b' };
+  if (s >= 35) return { g: 'D', cls: 'sd', col: '#f97316' };
+  return { g: 'F', cls: 'se', col: '#ef4444' };
+}
+function sbar(score) {
+  if (score === null || score === undefined) return '<span style="color:var(--muted);font-size:11px">Pending...</span>';
+  const { cls, col } = grade(score);
+  return `<div class="sbar-w"><div class="sbar"><div class="sf" style="width:${score}%;background:${col}"></div></div><span class="slbl ${cls}">${score}</span></div>`;
+}
+function av(name) { return `<div class="av">${(name||'?')[0].toUpperCase()}</div>`; }
+function timeAgo(str) {
+  if (!str) return '—';
+  const m = Math.round((new Date() - new Date(str)) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.round(m/60) + 'h ago'; return Math.round(m/1440) + 'd ago';
+}
+function getWorkerName(id) { const w = state.workers.find(x => x.id === id); return w ? w.name : id ? id.slice(-6) : '—'; }
+function getProfileName(ulid) { const p = state.profiles.find(x => x.ulid === ulid); return p ? p.name : ulid ? ulid.slice(-6) : '—'; }
+
+function updateBadges() {
+  document.getElementById('nb-workers').textContent = state.workers.filter(w => w.is_online).length;
+  document.getElementById('nb-online').textContent = state.dialogs.filter(d => d.contact_is_online).length;
+  document.getElementById('nb-alerts').textContent = state.alerts.filter(a => !a.is_read).length;
+  const unreadMails = state.mails ? state.mails.filter(m => m.is_incoming && !m.is_read).length : 0;
+  document.getElementById('nb-mails').textContent = unreadMails || 0;
+}
+
+// ─── Render all ───────────────────────────────────────────
+function renderAll() {
+  populateFilters();
+  renderDash();
+  renderWorkers();
+  renderOnline();
+  renderDialogs();
+  renderAlerts();
+}
+
+function populateFilters() {
+  const workers = state.workers;
+  const profiles = state.profiles;
+  ['on-worker', 'd-worker', 'm-worker', 'al-worker'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const v = el.value;
+    el.innerHTML = '<option value="">All workers</option>' + workers.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+    el.value = v;
+  });
+  ['on-profile', 'd-profile', 'm-profile'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const v = el.value;
+    el.innerHTML = '<option value="">All profiles</option>' + profiles.map(p => `<option value="${p.ulid}">${p.name}</option>`).join('');
+    el.value = v;
+  });
+}
+
+function populateProfileFilter() {
+  const workerId = document.getElementById('d-worker').value;
+  const el = document.getElementById('d-profile'); if (!el) return;
+  const profs = workerId ? state.profiles.filter(p => p.worker_id === workerId) : state.profiles;
+  el.innerHTML = '<option value="">All profiles</option>' + profs.map(p => `<option value="${p.ulid}">${p.name}</option>`).join('');
+}
+
+// ─── Dashboard ────────────────────────────────────────────
+function renderDash() {
+  const workersOnline = state.workers.filter(w => w.is_online).length;
+  const menOnline = state.dialogs.filter(d => d.contact_is_online).length;
+  const alertCount = state.alerts.filter(a => !a.is_read).length;
+  document.getElementById('d-workers').textContent = workersOnline;
+  document.getElementById('d-profiles').textContent = state.profiles.length;
+  document.getElementById('d-dialogs').textContent = state.dialogs.length;
+  document.getElementById('d-online').textContent = menOnline;
+  document.getElementById('d-alerts-cnt').textContent = alertCount;
+
+  // Workers table
+  const tbody = document.getElementById('d-workers-tbody');
+  if (!state.workers.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">No workers online yet. Install the extension on each operator\'s browser.</td></tr>';
+  } else {
+    tbody.innerHTML = state.workers.map(w => {
+      const wProfiles = state.profiles.filter(p => p.worker_id === w.id);
+      const wDialogs = state.dialogs.filter(d => d.worker_id === w.id);
+      const onlineC = wDialogs.filter(d => d.contact_is_online).length;
+      const scored = wDialogs.filter(d => d.ai_score !== null);
+      const avgS = scored.length ? Math.round(scored.reduce((a,d) => a + d.ai_score, 0) / scored.length) : null;
+      const incoming = wDialogs.filter(d => d.last_message_incoming);
+      const avgWait = incoming.length ? Math.round(incoming.reduce((a,d) => a + (new Date() - new Date(d.last_message_at)) / 60000, 0) / incoming.length) : 0;
+      const waitHtml = incoming.length ? (avgWait > 30 ? `<span style="color:var(--red)">${avgWait}m</span>` : avgWait > 10 ? `<span style="color:var(--yellow)">${avgWait}m</span>` : `<span style="color:var(--green)">${avgWait}m</span>`) : '—';
+      const alerts = state.alerts.filter(a => !a.is_read && a.worker_id === w.id).length;
+      return `<tr>
+        <td><div class="row">${av(w.name)}<div><div style="font-weight:500">${w.name}</div><div style="color:var(--muted);font-size:10px">${w.id.slice(-8)}</div></div></div></td>
+        <td><span style="color:var(--accent)">${wProfiles.length}</span> <span style="color:var(--muted);font-size:10px">${wProfiles.map(p=>p.name).slice(0,3).join(', ')}${wProfiles.length>3?'…':''}</span></td>
+        <td>${wDialogs.length}</td>
+        <td><span class="dot ${onlineC>0?'dg':'dr'}"></span>${onlineC}</td>
+        <td>${waitHtml}</td>
+        <td>${sbar(avgS)}</td>
+        <td>${alerts>0?`<span class="pill pr">${alerts}</span>`:'<span style="color:var(--green);font-size:11px">✓</span>'}</td>
+        <td><span class="pill ${w.is_online?'pg':'pb'}">${w.is_online?'● Online':'Offline'}</span></td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('d-workers-loading').style.display = 'none';
+  document.getElementById('d-workers-table').style.display = 'table';
+
+  const crit = state.alerts.filter(a => a.severity === 'high' && !a.is_read).slice(0, 5);
+  document.getElementById('d-alerts-list').innerHTML = crit.length ? crit.map(alertHtml).join('') : '<div class="empty">✅ No critical alerts</div>';
+}
+
+// ─── Workers page ─────────────────────────────────────────
+function renderWorkers() {
+  const container = document.getElementById('workers-grid');
+  if (!state.workers.length) { container.innerHTML = '<div class="empty">No workers yet. Each operator needs to install the Chrome extension.</div>'; return; }
+  container.innerHTML = state.workers.map(w => {
+    const wProfiles = state.profiles.filter(p => p.worker_id === w.id);
+    const wDialogs = state.dialogs.filter(d => d.worker_id === w.id);
+    const scored = wDialogs.filter(d => d.ai_score !== null);
+    const avgS = scored.length ? Math.round(scored.reduce((a,d) => a + d.ai_score, 0) / scored.length) : null;
+    const sg = grade(avgS);
+    const hi = state.alerts.filter(a => !a.is_read && a.severity === 'high' && a.worker_id === w.id).length;
+    const med = state.alerts.filter(a => !a.is_read && a.severity === 'medium' && a.worker_id === w.id).length;
+    const onlineC = wDialogs.filter(d => d.contact_is_online).length;
+    return `<div class="op-card">
+      <div class="row" style="margin-bottom:12px;gap:10px">
+        ${av(w.name)}
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">${w.name}</div>
+          <div style="color:var(--muted);font-size:11px">${wProfiles.length} profiles · ${wDialogs.length} dialogs · ${onlineC} online</div>
+          <span class="pill ${w.is_online?'pg':'pb'}" style="margin-top:3px;display:inline-block">${w.is_online?'● Online':'Offline'}</span>
+        </div>
+        <div style="text-align:center">
+          <div class="slbl ${sg.cls}" style="font-size:28px">${avgS !== null ? avgS : '—'}</div>
+          <div style="color:var(--muted);font-size:10px">AI Score</div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">PROFILES:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${wProfiles.map(p => `<span class="pill pb">${p.name}</span>`).join('') || '<span style="color:var(--muted);font-size:11px">No profiles yet</span>'}
+        </div>
+      </div>
+      <div class="sbar" style="height:7px;margin-bottom:10px;min-width:auto">
+        <div class="sf" style="width:${avgS||0}%;background:${sg.col}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        <div style="background:var(--s2);border-radius:7px;padding:8px;text-align:center"><div style="color:var(--red);font-weight:700;font-size:17px">${hi}</div><div style="color:var(--muted);font-size:10px">High alerts</div></div>
+        <div style="background:var(--s2);border-radius:7px;padding:8px;text-align:center"><div style="color:var(--yellow);font-weight:700;font-size:17px">${med}</div><div style="color:var(--muted);font-size:10px">Medium</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Online monitor ───────────────────────────────────────
+function renderOnline() {
+  const sort = document.getElementById('on-sort').value;
+  const wF = document.getElementById('on-worker').value;
+  const pF = document.getElementById('on-profile').value;
+  let list = state.dialogs.filter(d => d.contact_is_online);
+  if (wF) list = list.filter(d => d.worker_id === wF);
+  if (pF) list = list.filter(d => d.profile_ulid === pF);
+  if (sort === 'score') list.sort((a,b) => (a.ai_score||100) - (b.ai_score||100));
+  else list.sort((a,b) => {
+    const ai = a.last_message_incoming ? 1 : 0, bi = b.last_message_incoming ? 1 : 0;
+    if (ai !== bi) return bi - ai;
+    return new Date(b.last_message_at) - new Date(a.last_message_at);
+  });
+  const grid = document.getElementById('online-grid');
+  if (!list.length) { grid.innerHTML = '<div class="empty">😴 No men online right now</div>'; return; }
+  grid.innerHTML = list.map(d => {
+    const mins = Math.round((new Date() - new Date(d.last_message_at)) / 60000);
+    const urgent = d.last_message_incoming && mins > 10;
+    const warn = d.last_message_incoming && mins > 3;
+    const sg = grade(d.ai_score);
+    const profName = getProfileName(d.profile_ulid);
+    const workerName = getWorkerName(d.worker_id);
+    return `<div class="op-card ${urgent?'urgent-b':warn?'warn-b':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="row"><span class="dot dg"></span><span style="font-weight:600;font-size:13px">${d.contact_name||'—'}</span></div>
+        <div class="row">
+          ${d.ai_score !== null ? `<span class="slbl ${sg.cls}">${d.ai_score}</span>` : ''}
+          ${urgent ? '<span class="pill pr" style="font-size:10px">URGENT</span>' : ''}
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px">
+        ${d.last_message_incoming?'📨':'📤'} "${(d.last_message_body||'').slice(0,52)}"
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px">
+        <span>${timeAgo(d.last_message_at)}</span><span>Credits: ${d.contact_credits||'—'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><span class="pbadge">${profName}</span><span style="font-size:11px;color:var(--muted)">${workerName}</span></div>
+        <a class="link" href="https://chatshouse.com/dialogs/${d.contact_ulid}?x_ulid=${d.profile_ulid}" target="_blank">Open →</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Dialogs ──────────────────────────────────────────────
+function renderDialogs() {
+  const q = (document.getElementById('d-search').value||'').toLowerCase();
+  const wF = document.getElementById('d-worker').value;
+  const pF = document.getElementById('d-profile').value;
+  const sf = document.getElementById('d-score-f').value;
+  const st = document.getElementById('d-status').value;
+  let list = [...state.dialogs];
+  if (q) list = list.filter(d => (d.contact_name||'').toLowerCase().includes(q));
+  if (wF) list = list.filter(d => d.worker_id === wF);
+  if (pF) list = list.filter(d => d.profile_ulid === pF);
+  if (sf === 'good') list = list.filter(d => d.ai_score >= 80);
+  if (sf === 'avg') list = list.filter(d => d.ai_score >= 50 && d.ai_score < 80);
+  if (sf === 'bad') list = list.filter(d => d.ai_score !== null && d.ai_score < 50);
+  if (sf === 'none') list = list.filter(d => d.ai_score === null);
+  if (st === 'online') list = list.filter(d => d.contact_is_online);
+  if (st === 'incoming') list = list.filter(d => d.last_message_incoming);
+  list.sort((a,b) => { if (a.contact_is_online !== b.contact_is_online) return b.contact_is_online - a.contact_is_online; return (a.ai_score||100) - (b.ai_score||100); });
+  const tbody = document.getElementById('dial-tbody');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No dialogs</td></tr>'; return; }
+  tbody.innerHTML = list.map(d => `<tr>
+    <td><div class="row">${d.contact_is_online?'<span class="dot dg"></span>':''}
+      <div><div style="font-weight:500">${d.contact_name||'—'}</div><div style="color:var(--muted);font-size:10px">${d.contact_country||''}</div></div>
+    </div></td>
+    <td><span class="pbadge">${getProfileName(d.profile_ulid)}</span></td>
+    <td style="font-size:11px">${getWorkerName(d.worker_id)}</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted)">${d.last_message_incoming?'📨':'📤'} ${(d.last_message_body||'').slice(0,40)}</td>
+    <td style="font-size:11px">${timeAgo(d.last_message_at)}</td>
+    <td>${sbar(d.ai_score)}</td>
+    <td><button class="btn-ai" onclick="openDialog('${d.id}','${d.profile_ulid}','${d.contact_ulid}','${(d.contact_name||'').replace(/'/g,'')}')" >View</button></td>
+  </tr>`).join('');
+}
+
+// ─── Mails ────────────────────────────────────────────────
+function renderMails() {
+  const wF = document.getElementById('m-worker').value;
+  const pF = document.getElementById('m-profile').value;
+  const type = document.getElementById('m-type').value;
+  let list = [...(state.mails||[])];
+  if (wF) list = list.filter(m => m.worker_id === wF);
+  if (pF) list = list.filter(m => m.profile_ulid === pF);
+  if (type === '1') list = list.filter(m => m.is_incoming);
+  if (type === '0') list = list.filter(m => !m.is_incoming);
+  if (type === 'unread') list = list.filter(m => m.is_incoming && !m.is_read);
+  list.sort((a,b) => new Date(b.sent_at) - new Date(a.sent_at));
+  const tbody = document.getElementById('mails-tbody');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No mails found</td></tr>'; return; }
+  tbody.innerHTML = list.map(m => `<tr>
+    <td><div style="font-weight:500">${m.contact_name||'—'}</div></td>
+    <td><span class="pbadge">${getProfileName(m.profile_ulid)}</span></td>
+    <td style="font-size:11px">${getWorkerName(m.worker_id)}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted)">${(m.subject||m.body||'').slice(0,55)}</td>
+    <td>${m.is_incoming?'<span class="pill pb">Incoming</span>':'<span class="pill pg">Sent</span>'}${m.is_incoming&&!m.is_read?' <span class="pill pr">Unread</span>':''}</td>
+    <td style="font-size:11px">${timeAgo(m.sent_at)}</td>
+  </tr>`).join('');
+}
+
+// ─── Alerts ───────────────────────────────────────────────
+function renderAlerts() {
+  const type = document.getElementById('al-type').value;
+  const wF = document.getElementById('al-worker').value;
+  const sev = document.getElementById('al-sev').value;
+  let list = [...state.alerts];
+  if (type) list = list.filter(a => a.type === type);
+  if (wF) list = list.filter(a => a.worker_id === wF);
+  if (sev) list = list.filter(a => a.severity === sev);
+  list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  const el = document.getElementById('alerts-full-list');
+  el.innerHTML = list.length ? list.map(alertHtml).join('') : '<div class="empty">✅ No alerts found</div>';
+}
+function alertHtml(a) {
+  const icons = { high: '🔴', medium: '🟡', low: '🔵' };
+  return `<div class="alert-item" onclick="goToDialog('${a.contact_ulid}','${a.profile_ulid}')">
+    <div style="font-size:14px;margin-top:1px">${icons[a.severity]||'⚪'}</div>
+    <div class="atext">
+      <div class="atitle">${a.message}</div>
+      <div class="adesc"><span class="pbadge">${a.profile_name||'?'}</span>${getWorkerName(a.worker_id)} · ${a.contact_name||''}</div>
+    </div>
+    <div class="atime">${timeAgo(a.created_at)}</div>
+  </div>`;
+}
+async function markAllRead() {
+  await fetch(`${backendUrl}/api/admin/alerts/read`, { method: 'POST', headers: { 'x-admin-secret': adminSecret } });
+  state.alerts.forEach(a => a.is_read = 1);
+  renderAlerts(); updateBadges();
+}
+function goToDialog(contactUlid, profileUlid) {
+  if (contactUlid) window.open(`https://chatshouse.com/dialogs/${contactUlid}?x_ulid=${profileUlid||''}`, '_blank');
+}
+
+// ─── Dialog detail ────────────────────────────────────────
+let currentModalDialog = null;
+async function openDialog(dialogId, profileUlid, contactUlid, contactName) {
+  currentModalDialog = { dialogId, profileUlid, contactUlid, contactName };
+  const profName = getProfileName(profileUlid);
+  document.getElementById('modal-title').textContent = `💬 [${profName}] ${contactName}`;
+  document.getElementById('modal-messages').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+  document.getElementById('modal-ai-content').innerHTML = '<div class="empty">Loading...</div>';
+  document.getElementById('dialog-modal').classList.add('open');
+  try {
+    const r = await fetch(`${backendUrl}/api/admin/messages/${profileUlid}/${contactUlid}`, { headers: { 'x-admin-secret': adminSecret } });
+    const msgs = await r.json();
+    if (!msgs.length) document.getElementById('modal-messages').innerHTML = '<div class="empty">No messages stored yet</div>';
+    else {
+      document.getElementById('modal-messages').innerHTML = msgs.map(m => `
+        <div class="msg ${m.is_incoming?'inc':'out'}">
+          <div class="mbubble">${m.body||''}</div>
+          <div class="mmeta">${m.is_incoming ? contactName : profName} · ${timeAgo(m.sent_at)}</div>
+        </div>`).join('');
+      document.getElementById('modal-messages').scrollTop = 999999;
+    }
+  } catch(e) {}
+  const dialog = state.dialogs.find(d => String(d.id) === String(dialogId) && d.profile_ulid === profileUlid);
+  if (dialog && dialog.ai_score !== null) showAIResult(dialog.ai_score, dialog.ai_comment, dialog.ai_tips);
+  document.getElementById('modal-analyze-btn').onclick = () => analyzeDialog(dialogId, profileUlid);
+}
+function showAIResult(score, comment, tipsJson) {
+  const sg = grade(score);
+  let tips = [];
+  try { tips = typeof tipsJson === 'string' ? JSON.parse(tipsJson) : (tipsJson||[]); } catch(e) {}
+  document.getElementById('modal-ai-content').innerHTML = `
+    <div class="ai-score-big ${sg.cls}">${score}</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:10px">Grade ${sg.g}</div>
+    <div class="ai-comment">${comment||''}</div>
+    ${tips.length?`<div style="font-weight:600;font-size:11px;margin-bottom:6px">💡 Tips:</div><ul class="ai-tips">${tips.map(t=>`<li>${t}</li>`).join('')}</ul>`:''}`;
+}
+async function analyzeDialog(dialogId, profileUlid) {
+  const btn = document.getElementById('modal-analyze-btn');
+  btn.textContent = '⏳ Analyzing...'; btn.disabled = true;
+  try {
+    await fetch(`${backendUrl}/api/admin/analyze`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+      body: JSON.stringify({ dialogId: parseInt(dialogId), profileUlid })
+    });
+    document.getElementById('modal-ai-content').innerHTML = '<div class="empty">🤖 AI analyzing... results appear shortly via WebSocket</div>';
+  } catch(e) {}
+  btn.textContent = 'Analyze with AI'; btn.disabled = false;
+}
+function closeModal() { document.getElementById('dialog-modal').classList.remove('open'); currentModalDialog = null; }
+document.getElementById('dialog-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ─── Auto-refresh ─────────────────────────────────────────
+setInterval(loadState, 60000);
+</script>
+</body>
+</html>
